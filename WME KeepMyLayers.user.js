@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name            WME KeepMyLayers
+// @name            WME KeepMyLayers (Dev)
 // @namespace       https://greasyfork.org/users/11629-TheLastTaterTot
-// @version         0.4.5.8
+// @version         0.4.9
 // @description     (Beta) Resets WME layers to the way you want them, plus other fancy stuff. Includes bonus features for Beta WME testers.
 // @author          TheLastTaterTot
 // @include         https://editor-beta.waze.com/*editor/*
@@ -34,7 +34,7 @@
 */
 // ################################# DEBUG ##################################
 /* GLOBALS: KMLayersVersion, KMLayersSync */
-/*
+
 // Quiet log outputs from other scripts:
 (function() {
     console.__log = console.log;
@@ -57,7 +57,7 @@
         }
     };
 })();
-*/
+
 function kmllog() {
     var args = arguments,
         argArray = Object.keys(args).map(function(key) {
@@ -989,7 +989,7 @@ var KeepMyLayers = function() {
                 }
             }
         },
-        _GM_CALLS: {
+        _GM_CALLBACKS: {
             prefs: '',
             usage: '',
             beta: '',
@@ -998,29 +998,29 @@ var KeepMyLayers = function() {
         },
         _GM_refreshPrefsAttribute: function() {
             this.callGM("WMEKMLayers_Prefs", function(c) {
-                KMLayersSync._GM_CALLS.prefs = c;
+                KMLayersSync._GM_CALLBACKS.prefs = c;
                 //localStorage.WME_KMLSettings = c;
             })
         },
         _GM_refreshUsageAttribute: function() {
             this.callGM("WMEKMLayers_Usage", function(c) {
-                KMLayersSync._GM_CALLS.usage = c;
+                KMLayersSync._GM_CALLBACKS.usage = c;
                 //localStorage.WME_KMLUsageHelper = c;
             })
         },
         _GM_refreshBetaAttribute: function() {
             this.callGM("WMEKMLayers_Beta", function(c) {
-                KMLayersSync._GM_CALLS.beta = c;
+                KMLayersSync._GM_CALLBACKS.beta = c;
             })
         },
         _GM_refreshLangAttribute: function() {
             this.callGM("WMEKMLayers_Lang", function(c) {
-                KMLayersSync._GM_CALLS.lang = c;
+                KMLayersSync._GM_CALLBACKS.lang = c;
             })
         },
         _GM_refreshPresetsToObject: function() {
             this.callGM("WMEKMLayers_Presets", function(c) {
-                KMLayersSync._GM_CALLS.presets = c;
+                KMLayersSync._GM_CALLBACKS.presets = c;
             })
         },
         setPreferencesGM: function(gmVal) {
@@ -1047,7 +1047,7 @@ var KeepMyLayers = function() {
         },
         updateTheseSettingLS: function(queryCodes) {
             //this._GM_refreshPrefsAttribute();
-            var crossDomainKMLPrefs = this.getPreferencesGM(); //this._GM_CALLS.prefs;
+            var crossDomainKMLPrefs = this.getPreferencesGM(); //this._GM_CALLBACKS.prefs;
             if (crossDomainKMLPrefs) {
                 if (queryCodes.constructor === String) queryCodes = [queryCodes];
                 for (var q = 0, numQueryCodes = queryCodes.length; q < numQueryCodes; q++) {
@@ -2234,7 +2234,7 @@ var KeepMyLayers = function() {
             kmlLocaleValGM = KMLayersSync.getLocaleValueGM();
 
         //KMLayersSync._GM_refreshLangAttribute();
-        //kmlLocaleValGM = KMLayersSync._GM_CALLS.lang;
+        //kmlLocaleValGM = KMLayersSync._GM_CALLBACKS.lang;
         if (!kmlLocaleValGM || kmlLocaleValGM === true) kmlayersLangChk = 'none'; //Bool true means to use default locale (en)
 
         while (++kml_ls < numkmlLocaleSelector) {
@@ -2797,7 +2797,7 @@ var KeepMyLayers = function() {
             //-------------------------------------------------------------
             // Insert beta/prod toggle
             //KMLayersSync._GM_refreshBetaAttribute();
-            var kmlBetaToggleGM = KMLayersSync.getBetaTogValueGM(); //KMLayersSync._GM_CALLS.beta,
+            var kmlBetaToggleGM = KMLayersSync.getBetaTogValueGM(); //KMLayersSync._GM_CALLBACKS.beta,
             kmlBetaTogSet = KMLayersSync.hasSettingEnabled('&b');
 
             // Sync betaTog between prod & beta by relying on the existence of WMEKMLayers_Beta in GM scope
