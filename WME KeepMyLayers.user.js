@@ -923,7 +923,7 @@ var KeepMyLayers = function() {
         }
 
         if (KmLSync.hasSettingEnabled('&p')) myKMLayers = KmLSync.getSavedPresetsFromGMThenToLS(myKMLayers);
-        else myKMLayers = getMyKMLayersObject(); //merge with what's in localStorage, favoring localStorage
+        else myKMLayers = KmLSync.mergeMyKmLObjToLocalStorage(myKMLayers); //merge with what's in localStorage, favoring localStorage
 
         myKMLayers.SAVED_PRESETS[myKMLayers.idx].visibleInLayersMenu = visibleInLayersMenu; //save only visible
         myKMLayers.SAVED_PRESETS[myKMLayers.idx].visibleInLayersMenuRealName = visibleInLayersMenuRealName;
@@ -2003,7 +2003,7 @@ var KeepMyLayers = function() {
     // Dropdown menu for selecting layers
     var updatePresetSwitcherMenu = function(kml_layerSwitcher) {
 		if (KmLSync.hasSettingEnabled('&p')) myKMLayers = KmLSync.getSavedPresetsFromGMThenToLS(myKMLayers); //ensure presets are update-to-date by grabbing fresh copy from GM-space
-        else myKMLayers = getMyKMLayersObject(); //merge with what's in localStorage, favoring localStorage in case it has been updated in another window
+        else myKMLayers = KmLSync.mergeMyKmLObjToLocalStorage(myKMLayers); //merge with what's in localStorage, favoring localStorage in case it has been updated in another window
 
         if (kml_layerSwitcher === undefined || kml_layerSwitcher === '') kml_layerSwitcher = getWazeMapLayersFromSwitcher(_W_map.layers);
 
@@ -2079,7 +2079,7 @@ var KeepMyLayers = function() {
                     'class="kml-preset dropdown-item ' + selStatus + coloredText[0 ^ myKMLayers.SAVED_PRESETS[kmlset].saved] + '" ' +
                     'data-popup-text=\'' + layerPresetPopup + '\' ' +
                     'href="javascript:void(0)">' +
-                    '<div title="Click to pick color. Drag tab to reorder." class="kml-color-tab" style="background-color:' + tabColor + '"></div>' +
+                    '<div title="Click to change tab color" class="kml-color-tab" style="background-color:' + tabColor + '"></div>' +
                     '<span class="fa fa-trash"></span>' +
                     '<span>' + myKMLayers.SAVED_PRESETS[kmlset].name + '</span>' +
                     '</a>' +
@@ -2754,7 +2754,7 @@ var KeepMyLayers = function() {
             kmlOptions, kmlOptionsHelpTips, kmlSettingsUI = document.createElement('div');
 
         if (KmLSync.hasSettingEnabled('&p')) myKMLayers = KmLSync.getSavedPresetsFromGMThenToLS(myKMLayers); //updates myKMLayers by replacing presets with those saved in GM-space
-        else myKMLayers = getMyKMLayersObject(); //updates myKMLayers by favoring what's saved in localStorage
+        else myKMLayers = KmLSync.mergeMyKmLObjToLocalStorage(myKMLayers); //updates myKMLayers by favoring what's saved in localStorage
 		requestAnimationFrame(function(){
 			updatePresetSwitcherMenu(getWazeMapLayersFromSwitcher(_W_map.layers));
 		});
@@ -3353,27 +3353,26 @@ var KeepMyLayers = function() {
                 updateKMLayersSaveButton(false);
             }
             //==============================================================================
+            //------------------ Setup event listeners -------------------
+            // Setup event listener for stay open dropdown
+            //
+            document.getElementById('kmlPresetSwitcher').addEventListener('click', function(e) {
+                if (e.target === this) {
+                	if (this.classList.toggle('kml-keep-open')) this.classList.remove('open');
+                }
+            }, false);
+
+            document.querySelector('.kml-preset-menu.dropdown-toggle').addEventListener('click', function(e) {
+                if (e.target === this) {
+            	       updatePresetSwitcherMenu(getWazeMapLayersFromSwitcher(_W_map.layers));
+                }
+            }, false);
+
             // Event listeners for buttons under layer menu
             document.getElementById("iKMLsaveLayers").onclick = saveKMLayers;
             document.getElementById("iKMLsettings").onclick = showKMLPrefsPanel;
             document.getElementById("iKMLresetLayers").onclick = userResetOfLayersToSavedKMLayers;
             _$_(".kml-icn-btn[data-toggle=tooltip]").tooltip(); //{	placement: 'bottom'	}
-
-            //------------------ Setup event listeners -------------------
-            // Setup event listener for stay open dropdown
-            //
-            document.getElementById('kmlPresetSwitcher').onclick = function(e) {
-                if (e.target === this || e.target === document.querySelector('.kml-preset-menu.dropdown-toggle')) {
-                	if (this.classList.toggle('kml-keep-open')) this.classList.remove('open');
-                }
-            };
-
-            document.querySelector('.kml-preset-menu.dropdown-toggle').onclick = function(e) {
-                if (e.target === this || e.target === document.getElementById('kmlPresetSwitcher')) {
-            	       updatePresetSwitcherMenu(getWazeMapLayersFromSwitcher(_W_map.layers));
-                }
-            };
-            if (KmLSync.hasSettingEnabled('&t')) document.getElementById('kmlPresetSwitcher').classList.add('kml-tabbed');
 
             // Doubleclick layer menu shortcut for KMLayers preferences panel
             if (document.getElementById("layer-switcher-menu") !== null) {
@@ -3388,6 +3387,7 @@ var KeepMyLayers = function() {
 
             // If set, insert regular simple PL (for all editors)
             if (KmLSync.hasSettingEnabled('&r')) requestAnimationFrame(initRegPermalink);
+            if (KmLSync.hasSettingEnabled('&t')) document.getElementById('kmlPresetSwitcher').classList.add('kml-tabbed');
 
         } else if (document.getElementById("iKMLsaveLayers") !== null) {
             kml[6] = 0;
