@@ -1719,29 +1719,29 @@ var KeepMyLayers = function() {
     };
 
     var dragEndPreset = function(ev) {
-        //$(this.children).each(function(i,node){node.style.opacity = 1;});
+        //_$_(this.children).each(function(i,node){node.style.opacity = 1;});
         //console.debug('DragEnd:',ev.target);
         ev.preventDefault();
         document.getElementById('showPopup').checked = true;
 
-        _$_('.kml-preset').css('opacity', '');
-        _$_('.kml-preset').prop('draggable', false);
-        //_$_('.kml-preset-menu').css('pointer-events', 'none');
-        _$_('.kml-preset-menu').removeClass('kml-dragging');
-        _$_('.kml-preset-menu>li').removeClass('kml-drag');
+        var presets = document.getElementsByClassName('kml-preset'),
+            residualDrag = document.querySelectorAll('.kml-drag'),
+            p, pLength = presets.length, residLength = residualDrag.length;
 
-        _$_('.kml-preset').each(function(i, node) {
-            node.removeEventListener('dragover', allowDropPreset, false);
-        });
-        _$_('.kml-preset').each(function(i, node) {
-            node.removeEventListener('dragenter', dragEnterPreset, false);
-        });
-        _$_('.kml-preset').each(function(i, node) {
-            node.removeEventListener('drop', dropPreset, true);
-        });
-        _$_('.kml-preset').each(function(i, node) {
-            node.removeEventListener('dragend', dragEndPreset, false);
-        });
+        //_$_('.kml-preset-menu').css('pointer-events', 'none');
+        document.querySelector('ul.kml-preset-menu').classList.remove('kml-dragging');
+        for (p=0; p<residLength; p++) {
+            residualDrag[p].classList.remove('kml-drag');
+        }
+
+        for (p=0; p<pLength; p++) {
+            presets[p].style.opacity = '';
+            presets[p].draggable = false;
+            presets[p].removeEventListener('dragover', allowDropPreset, false);
+            presets[p].removeEventListener('dragenter', dragEnterPreset, false);
+            presets[p].removeEventListener('drop', dropPreset, true);
+            presets[p].removeEventListener('dragend', dragEndPreset, false);
+        }
         window.removeEventListener('mouseup', dragEndPreset, false);
         ev.stopPropagation();
     };
@@ -1757,7 +1757,7 @@ var KeepMyLayers = function() {
             refNode = presetListEl.childNodes[findNodeIndex.call(presetListEl.childNodes, 'value', targetPresetID)];
 
         presetListEl.insertBefore(draggedPresetEl, refNode);
-        if (startMouseYPos <= ev.clientY) presetListEl.insertBefore(refNode, draggedPresetEl); //moved down, so insert after instead
+        if (startMouseYPos <= ev.offsetY) presetListEl.insertBefore(refNode, draggedPresetEl); //moved down, so insert after instead
 
         /*if (!this.children[0].classList.contains('active')) this.children[0].classList.add('kml-bugfix');
         if (!draggedPresetEl.classList.contains('active')) draggedPresetEl.classList.add('kml-bugfix');
@@ -1772,7 +1772,7 @@ var KeepMyLayers = function() {
             if (listElements[l].classList.contains('active')) {
                 myKMLayers.idx = l;
             } else {
-                listElements[l].classList.add('kml-bugfix')
+                listElements[l].classList.add('kml-bugfix');
             }
             listElements[l].setAttribute('value',l);
             listElements[l].id = 'kmlSet_' + l;
@@ -1792,7 +1792,12 @@ var KeepMyLayers = function() {
     var dragEnterPreset = function(ev) {
         //console.debug('DragEnter:',ev.target);
         //ev.dataTransfer.dropEffect = 'move';
-        _$_('.kml-preset-menu>li').removeClass('kml-drag');
+        var listItems = document.querySelectorAll('.kml-preset-menu>li'),
+            l, lLength = listItems.length;
+
+        for (l=0; l<lLength; l++) {
+            listItems[l].classList.remove('kml-drag');
+        }
         this.parentNode.classList.add('kml-drag'); //highlight drop site
     };
 
@@ -1800,58 +1805,60 @@ var KeepMyLayers = function() {
     var dragStartPreset = function(ev) {
         //console.debug('DragStart:',ev);
         document.getElementById('showPopup').checked = false;
-        var draggedPresetID = this.getAttribute('value');
-        startMouseYPos = ev.clientY;
+
+        var draggedPresetID = this.getAttribute('value'),
+            presets = document.getElementsByClassName('kml-preset'),
+            p, pLength = presets.length;
+
+        startMouseYPos = ev.offsetY;
         //console.debug('Dragging preset',parseInt(draggedPresetID)+1);
 
         ev.dataTransfer.setData('text', draggedPresetID);
-        _$_('.kml-preset').each(function(i, node) {
-            node.addEventListener('drop', dropPreset, true);
-        });
+        for (p=0; p<pLength; p++) {
+            presets[p].addEventListener('drop', dropPreset, true);
+        }
         ev.dataTransfer.setDragImage(this, ev.offsetX, ev.offsetY);
         ev.dataTransfer.dropEffect = 'move';
 
-        _$_('.kml-preset-menu').addClass('kml-dragging');
+        document.querySelector('ul.kml-preset-menu').classList.add('kml-dragging');
 
         this.style.opacity = 0.4;
     };
     //-----------------------------------------------------------------------------------
     var enableDragAndDrop = function() {
-        var elements = document.getElementsByClassName('kml-color-tab');
+        //console.debug('enableDragAndDrop()');
+        try {
+            var elements = document.getElementsByClassName('kml-color-tab'),
+                presets = document.getElementsByClassName('kml-preset'),
+                p, pLength = presets.length, pp;
 
-        _$_('.kml-preset').each(function(i, node) {
-            node.addEventListener('dragstart', dragStartPreset, false);
-        });
+            for (p=0; p<pLength; p++) {
+                presets[p].addEventListener('dragstart', dragStartPreset, false);
+                elements[p].addEventListener('mouseenter',function(e) {
+                    clearTimeout(cancelPopup);
+                    if (document.getElementsByClassName('kml-tooltip').length)
+                        document.getElementsByClassName('kml-tooltip')[0].style.display = 'none';
+                    document.getElementById('showPopup').checked = false;
+                }, false);
+                elements[p].addEventListener('mouseleave',function(e) {
+                    document.getElementById('showPopup').checked = true;
+                    if (document.getElementsByClassName('kml-tooltip').length)
+                        document.getElementsByClassName('kml-tooltip')[0].style.display = 'block';
+                }, false);
 
-        for (var p=0, pLength=elements.length; p<pLength; p++) {
-            elements[p].addEventListener('mouseenter',function(e) {
-                clearTimeout(cancelPopup);
-                if (document.getElementsByClassName('kml-tooltip').length)
-                    document.getElementsByClassName('kml-tooltip')[0].style.display = 'none';
-                document.getElementById('showPopup').checked = false;
-            }, false);
-            elements[p].addEventListener('mouseleave',function(e) {
-                document.getElementById('showPopup').checked = true;
-                if (document.getElementsByClassName('kml-tooltip').length)
-                    document.getElementsByClassName('kml-tooltip')[0].style.display = 'block';
-            }, false);
-
-            elements[p].addEventListener('mousedown', function(e) {
-                //console.debug('hi');
-                e.stopPropagation();
-                _$_('.kml-preset').prop('draggable', true);
-                _$_('.kml-preset').each(function(i, node) {
-                    node.addEventListener('dragover', allowDropPreset, false);
-                });
-                _$_('.kml-preset').each(function(i, node) {
-                    node.addEventListener('dragenter', dragEnterPreset, false);
-                });
-                _$_('.kml-preset').each(function(i, node) {
-                    node.addEventListener('dragend', dragEndPreset, false);
-                });
-                window.addEventListener('mouseup', dragEndPreset, false);
-            }, false);
-        }
+                elements[p].addEventListener('mousedown', function(e) {
+                    //console.debug('hi');
+                    e.stopPropagation();
+                    for (pp=0; pp<pLength; pp++) {
+                        presets[pp].draggable = true;
+                        presets[pp].addEventListener('dragover', allowDropPreset, false);
+                        presets[pp].addEventListener('dragenter', dragEnterPreset, false);
+                        presets[pp].addEventListener('dragend', dragEndPreset, false);
+                    }
+                    window.addEventListener('mouseup', dragEndPreset, false);
+                }, false);
+            }
+        } catch(err) {console.error(err);}
     };
 
     var insertColorPicker = function(ev){
@@ -2005,6 +2012,8 @@ var KeepMyLayers = function() {
 		if (KmLSync.hasSettingEnabled('&p')) myKMLayers = KmLSync.getSavedPresetsFromGMThenToLS(myKMLayers); //ensure presets are update-to-date by grabbing fresh copy from GM-space
         else myKMLayers = KmLSync.mergeMyKmLObjToLocalStorage(myKMLayers); //merge with what's in localStorage, favoring localStorage in case it has been updated in another window
 
+        updateKMLayersSaveButton(myKMLayers.SAVED_PRESETS[myKMLayers.idx].saved);
+
         if (kml_layerSwitcher === undefined || kml_layerSwitcher === '') kml_layerSwitcher = getWazeMapLayersFromSwitcher(_W_map.layers);
 
         var numKMLsets = myKMLayers.SAVED_PRESETS.length,
@@ -2079,7 +2088,7 @@ var KeepMyLayers = function() {
                     'class="kml-preset dropdown-item ' + selStatus + coloredText[0 ^ myKMLayers.SAVED_PRESETS[kmlset].saved] + '" ' +
                     'data-popup-text=\'' + layerPresetPopup + '\' ' +
                     'href="javascript:void(0)">' +
-                    '<div title="Click to change tab color" class="kml-color-tab" style="background-color:' + tabColor + '"></div>' +
+                    '<div title="Click to pick color. Drag tab to reorder." class="kml-color-tab" style="background-color:' + tabColor + '"></div>' +
                     '<span class="fa fa-trash"></span>' +
                     '<span>' + myKMLayers.SAVED_PRESETS[kmlset].name + '</span>' +
                     '</a>' +
@@ -2089,8 +2098,8 @@ var KeepMyLayers = function() {
 
             htmlText += '<li><div class="kml-layers-add"><i class="fa fa-plus"></i></div></li>';
             document.querySelector('ul[class*=kml-preset-menu]').innerHTML = htmlText;
-            //document.getElementById('divKMLlayerName').innerHTML = myKMLayers.SAVED_PRESETS[myKMLayers.idx].name;
-            _$_('#divKMLlayerName').text(myKMLayers.SAVED_PRESETS[myKMLayers.idx].name);
+            document.getElementById('divKMLlayerName').innerHTML = myKMLayers.SAVED_PRESETS[myKMLayers.idx].name;
+            //_$_('#divKMLlayerName').text(myKMLayers.SAVED_PRESETS[myKMLayers.idx].name);
 
             // Init preset's layer list tooltips
             var presetMenuListEl = document.querySelectorAll('a.kml-preset'),
@@ -2123,7 +2132,6 @@ var KeepMyLayers = function() {
             //for (var t=0, tlength=trashElements.length; t<tlength; t++){ trashElements[t].addEventListener('click',removePreset,false); }
 
             enableDragAndDrop();
-            updateKMLayersSaveButton(myKMLayers.SAVED_PRESETS[myKMLayers.idx].saved);
 
             return missingLayerNames;
         } else {
@@ -2754,15 +2762,15 @@ var KeepMyLayers = function() {
             kmlOptions, kmlOptionsHelpTips, kmlSettingsUI = document.createElement('div');
 
         if (KmLSync.hasSettingEnabled('&p')) myKMLayers = KmLSync.getSavedPresetsFromGMThenToLS(myKMLayers); //updates myKMLayers by replacing presets with those saved in GM-space
-        else myKMLayers = KmLSync.mergeMyKmLObjToLocalStorage(myKMLayers); //updates myKMLayers by favoring what's saved in localStorage
+        else myKMLayers = getMyKMLayersObject(); //updates myKMLayers by favoring what's saved in localStorage
 		requestAnimationFrame(function(){
 			updatePresetSwitcherMenu(getWazeMapLayersFromSwitcher(_W_map.layers));
 		});
         //----------------------------------------------------------
         // setup checkbox list for UI
         kmlOptions = ['Insert a Beta-Production WME toggle into left side-panel', // &b
-            'Replace permalink icon with Beta-Prod toggle-friendly permalinks<br>(for Beta WME testers)', // &a
-            'Replace permalink icon with KmL shortened regular permalinks<br>(for all editors)', // &r
+            'Replace permalink icon with Beta-Prod toggle-friendly permalinks<br><i>(for beta WME testers)</i>', // &a
+            'Replace permalink icon with KmL shortened regular permalinks<br><i>(for all editors)</i>', // &r
             'Synchronize KeepMyLayers preferences between Beta and Prod WME', // &s
             'Synchronize saved presets between Beta and Prod WME', // &p
             'Remove locale from clicked permalinks and force', // &l
@@ -2775,7 +2783,7 @@ var KeepMyLayers = function() {
 
         kmlOptionsHelpTips = ['The <b>Beta-Prod toggle</b> is added to the top of the left side-panel (near your username). Use it to force permalinks to load in either <font color=&quot;#FF3B49&quot;>Beta</font> or <font color=&quot;#93C4D3&quot;>Production</font> WME. Double-click on toggle to quickly disable. <p></p>Note: If you are not a Beta WME tester, it is unlikely that you will find this feature useful.',
             '<b>Beta-Prod toggle-friendly permalinks</b> (PLs) allow you to easily switch back and forth between Beta and Prod WME without having to disable the toggle.<p></p>Enabling this feature will replace the PL icon in the WME footer with two new options that can ignore the toggle\'s setting: use <font color=&quot;#FF3B49&quot;>red PL</font> for Beta and <font color=&quot;#93C4D3&quot;>blue PL</font> for Prod. You can click on these PLs to switch between editors or for reloading the page. Copy the blue PL for sharing the Prod link while in Beta. Any layers and locales are always removed.<p></p>Hovering over the links and pressing the shift key turns friendly-PL tagging on/off.',
-            '(Added to KmL by popular request) Remove all layer and filter specifications from copied permalinks. In addition, presently *unique to KmL*, the permalink icon remains clickable even when WME is stuck on the darkened save screen.',
+            '(Added to KmL by popular request) Remove all layer and filter specifications from copied permalinks. In addition, presently <b><i>unique to KmL</i></b>, the permalink icon remains clickable even when WME is stuck on the darkened save screen.',
             'Synchronize all your settings under KeepMyLayers Preferences between Beta and Prod editors. This does not include your saved layer presets.',
             'Synchronize your saved layer presets between Beta and Prod editors.<p></p>NOTE: The Presets Sync feature is still being developed. Your first sync will involved combining the presets from both editors and you may have to go into the Preference pane to remove any duplicates. In the future, KMLayers will try to check for this. Also, if you added or removed a preset in another WME window, you will have to click on the KMLayers Presets Switcher button to manually refresh the list.',
             '<b>PL locale removal</b> prevents WME from loading in another language. You can optionally force a specific locale by selecting your desired language from the dropdown menu.<p></p>CAUTION: At the moment, KMLayers is unable to switch back and forth between languages. If you saved your layers while using localized WME, you must load WME with the same locale for your saved layer presets to work. If you switch to a different locale, you will be required to resave your layers. This will be fixed in a forthcoming update.',
@@ -3221,7 +3229,7 @@ var KeepMyLayers = function() {
                 #kmlPresetSwitcher .toolbar-button.kml-preset-menu:after, #kmlPresetSwitcher .toolbar-button.kml-preset-menu:before { display: none !important; }\n';
  			kmlStyle.innerHTML += '\
                  menu.kml-preset-menu-container { height: ' + mapHeight + '!important; }\n\
-                 menu.kml-preset-menu-container.dropdown-menu { width: 350px; background: transparent; box-shadow: none; height: 90%; opacity: 1; position: relative; right: 0px; top: initial; overflow-x: hidden; overflow-y: visible; pointer-events: none; border: 0; }\n\
+                 menu.kml-preset-menu-container.dropdown-menu { width: 330px; background: transparent; box-shadow: none; height: 90%; opacity: 1; position: relative; right: 0px; top: initial; overflow-x: hidden; overflow-y: visible; pointer-events: none; border: 0; }\n\
                  menu.kml-preset-menu-container, menu.kml-preset-menu-container>ul.dropdown-menu { z-index: 2; white-space: normal; border-radius: 0px;  margin: 0; padding: 0;}\n\
                  #kmlPresetSwitcher ul.kml-preset-menu>li { min-height: 35px; }\n\
                  #kmlPresetSwitcher ul.kml-preset-menu>li:last-child { min-height: 0; height: 0; }\n\
@@ -3243,10 +3251,10 @@ var KeepMyLayers = function() {
 				'.kml-color-tab {cursor: move; position: absolute; left: -1px; width: 10px; top: -1px; bottom: -1px; box-shadow: inset 0px 1px 0px rgba(0,0,0,0.05), inset 0px -1px 0px rgba(0,0,0,0.05); opacity: 0.6;}\n' +
                 '.kml-keep-open.kml-tabbed .kml-color-tab {width: 15px;}\n' +
                 '.kml-keep-open.kml-tabbed:hover .kml-color-tab, .kml-keep-open.kml-tabbed ul>li:hover .kml-color-tab, .kml-keep-open.kml-tabbed ul>li>a:hover .kml-color-tab {width: 10px;}\n' +
-				'.kml-colorpicker {left: 0; opacity: 0; transition: all 0.1s linear 0s; position: absolute; display: table; top: 0px; width: 110px; height: 100%; background-color: #FFF; outline: #FFF solid 2px; }\n' +
-				'.kml-colorpicker.open-drawer { left: -111px; opacity: 1; transition: all 0.2s linear 0s; }\n' +
-				'.kml-colorpicker>.kml-colorpicker-row {display: table-row; opacity: 0.7; background-color: #FFF;}\n' +
-				'.kml-colorpicker>.kml-colorpicker-row>span {display: inline-table; width: 16.6%; height: 100%; }\n' +
+				'.kml-colorpicker {left: 0; opacity: 0; transition: all 0.1s linear 0s; position: absolute; display: block; top: 0px; width: 112px; height: 38px; background-color: #FFF; outline: #FFF solid 2px; }\n' +
+				'.kml-colorpicker.open-drawer { left: -113px; opacity: 1; transition: all 0.2s linear 0s; }\n' +
+				'.kml-colorpicker>.kml-colorpicker-row {display: block; opacity: 0.7; background-color: #FFF; height: 50%; width: 100%; }\n' +
+				'.kml-colorpicker>.kml-colorpicker-row>span { float: left; width: 16.6%; height: 100%; }\n' +
 				'#kmlPresetSwitcher .fa-trash { position: absolute; right: 8px; top: 12px; color: #92c2d1; cursor: pointer; opacity: 0.3; transition: opacity 0.5s linear 0s;}\n' +
                 '#kmlPresetSwitcher.dropdown:hover .fa-trash, #kmlPresetSwitcher.kml-keep-open .kml-preset-menu:hover .fa-trash {opacity: 0.8;}\n' +
 				'#kmlPresetSwitcher .fa-trash:hover { color: crimson; opacity: 1; cursor: pointer; transition-duration: 0.1s; }\n';
@@ -3261,11 +3269,11 @@ var KeepMyLayers = function() {
 				'#kmlPresetSwitcher.kml-keep-open menu>ul.kml-preset-menu, .kml-keep-open menu>ul.kml-preset-menu>li, .kml-keep-open li>a:active, .kml-keep-open li>a.active, .kml-keep-open li>a:focus, .kml-keep-open .kml-color-tab \
 					{ transition: all 1s linear 0.8s; }\n' +
                 '#kmlPresetSwitcher.dropdown:hover ul.dropdown-menu, #kmlPresetSwitcher menu.kml-preset-menu-container.dropdown-menu>ul:hover { opacity: 1; transition: opacity 0.25s linear 0s; pointer-events: auto;}\n' +
-			 	'.kml-keep-open menu.kml-preset-menu-container>ul.kml-preset-menu>li:active, .kml-keep-open ul.kml-preset-menu>li:focus, #kmlPresetSwitcher.kml-keep-open menu.kml-preset-menu-container>ul.kml-preset-menu>li:hover, #kmlPresetSwitcher.kml-keep-open menu.kml-preset-menu-container>ul.kml-preset-menu>li>a \
+			 	'.kml-keep-open menu.kml-preset-menu-container>ul.kml-preset-menu>li:active, .kml-keep-open ul.kml-preset-menu>li:focus, #kmlPresetSwitcher.kml-keep-open menu.kml-preset-menu-container>ul.kml-preset-menu>li:hover, #kmlPresetSwitcher.kml-keep-open menu.kml-preset-menu-container>ul.kml-preset-menu>li>a \
 					{ opacity: 1; transition: all 0.1s;}\n' +
 				'.kml-keep-open menu>ul.kml-preset-menu>li { border-bottom: 2px solid rgba(212,231,237,0.4) }\n' +
     			'.kml-keep-open menu>ul.kml-preset-menu a { background-color: transparent; color: inherit; }\n' + //menu>ul.kml-preset-menu>li>a:focus, .kml-keep-open menu>ul.kml-preset-menu>li>a:focus
-				'#kmlPresetSwitcher.kml-keep-open menu>ul.kml-preset-menu:hover>li, #kmlPresetSwitcher.kml-keep-open menu.kml-preset-menu-container>ul.kml-preset-menu>li:hover, #kmlPresetSwitcher.kml-keep-open menu.kml-preset-menu-container>ul.kml-preset-menu:hover>li>a.active, #kmlPresetSwitcher.kml-keep-open menu.kml-preset-menu-container>ul.kml-preset-menu>li>a.active:hover, #kmlPresetSwitcher.kml-keep-open menu.kml-preset-menu-container>ul.kml-preset-menu>li>a:hover, #kmlPresetSwitcher.dropdown:hover ul.dropdown-menu, .kml-keep-open .kml-preset-menu:hover .kml-color-tab \
+				'#kmlPresetSwitcher.kml-keep-open menu>ul.kml-preset-menu:hover>li, #kmlPresetSwitcher.kml-keep-open menu.kml-preset-menu-container>ul.kml-preset-menu>li:hover, #kmlPresetSwitcher.kml-keep-open menu.kml-preset-menu-container>ul.kml-preset-menu:hover>li>a.active, #kmlPresetSwitcher.kml-keep-open menu.kml-preset-menu-container>ul.kml-preset-menu>li>a.active:hover, #kmlPresetSwitcher.kml-keep-open menu.kml-preset-menu-container>ul.kml-preset-menu>li>a:hover, #kmlPresetSwitcher.dropdown:hover ul.dropdown-menu, .kml-keep-open .kml-preset-menu:hover .kml-color-tab \
 					{ opacity: 1; transition: all 0.1s; }\n' + //#kmlPresetSwitcher.kml-keep-open ul.kml-preset-menu>li, #kmlPresetSwitcher.kml-keep-open ul.kml-preset-menu a
 				'#kmlPresetSwitcher.kml-keep-open menu.kml-preset-menu-container>ul.kml-preset-menu:hover, #kmlPresetSwitcher.kml-keep-open:hover menu.kml-preset-menu-container>ul.kml-preset-menu \
 					{ transition: all 0.15s linear 0s; right: 0px; background-color: #FFF; }\n' +
@@ -3346,33 +3354,36 @@ var KeepMyLayers = function() {
                 //--------------------------------------
                 // CHECK IF SEGMENTS NEED TO BE RESELECTED
                 //--------------------------------------
-                reselectSegments();
+                if (/&segments=([\d,]+)/.test(location.href)) reselectSegments();
                 //---------------------------------------
 
             } else {
                 updateKMLayersSaveButton(false);
             }
             //==============================================================================
-            //------------------ Setup event listeners -------------------
-            // Setup event listener for stay open dropdown
-            //
-            document.getElementById('kmlPresetSwitcher').addEventListener('click', function(e) {
-                if (e.target === this) {
-                	if (this.classList.toggle('kml-keep-open')) this.classList.remove('open');
-                }
-            }, false);
-
-            document.querySelector('.kml-preset-menu.dropdown-toggle').addEventListener('click', function(e) {
-                if (e.target === this) {
-            	       updatePresetSwitcherMenu(getWazeMapLayersFromSwitcher(_W_map.layers));
-                }
-            }, false);
-
             // Event listeners for buttons under layer menu
             document.getElementById("iKMLsaveLayers").onclick = saveKMLayers;
             document.getElementById("iKMLsettings").onclick = showKMLPrefsPanel;
             document.getElementById("iKMLresetLayers").onclick = userResetOfLayersToSavedKMLayers;
             _$_(".kml-icn-btn[data-toggle=tooltip]").tooltip(); //{	placement: 'bottom'	}
+
+            //------------------ Setup event listeners -------------------
+            // Setup event listener for stay open dropdown
+            //
+            document.getElementById('kmlPresetSwitcher').onclick = function(e) {
+                //console.debug('click - #kmlPresetSwitcher');
+                if (e.target === this || e.target === document.querySelector('.kml-preset-menu.dropdown-toggle')) {
+                	if (this.classList.toggle('kml-keep-open')) this.classList.remove('open');
+                }
+            };
+
+            document.querySelector('.kml-preset-menu.dropdown-toggle').onclick = function(e) {
+                //console.debug('click - .kml-preset-menu.dropdown-toggle');
+                if (e.target === this || e.target === document.getElementById('kmlPresetSwitcher')) {
+            	       updatePresetSwitcherMenu(getWazeMapLayersFromSwitcher(_W_map.layers));
+                }
+            };
+            if (KmLSync.hasSettingEnabled('&t')) document.getElementById('kmlPresetSwitcher').classList.add('kml-tabbed');
 
             // Doubleclick layer menu shortcut for KMLayers preferences panel
             if (document.getElementById("layer-switcher-menu") !== null) {
@@ -3387,7 +3398,6 @@ var KeepMyLayers = function() {
 
             // If set, insert regular simple PL (for all editors)
             if (KmLSync.hasSettingEnabled('&r')) requestAnimationFrame(initRegPermalink);
-            if (KmLSync.hasSettingEnabled('&t')) document.getElementById('kmlPresetSwitcher').classList.add('kml-tabbed');
 
         } else if (document.getElementById("iKMLsaveLayers") !== null) {
             kml[6] = 0;
